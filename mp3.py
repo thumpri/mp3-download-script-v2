@@ -1,9 +1,12 @@
+from __future__ import unicode_literals
 import sys
 import os
 import concurrent.futures
 from os import system
 import youtube_dl
 import getopt
+
+
 
 class color:
     OKCYAN = '\033[96m'
@@ -21,7 +24,7 @@ def get_download_path():
             location = winreg.QueryValueEx(key, downloads_guid)[0]
         return location
     else:
-        return os.path.join(os.path.expanduser('~'), 'downloads')
+        return os.path.join(os.path.expanduser('~'), 'Desktop')
 
 def print_status():
     system('cls')
@@ -30,8 +33,36 @@ def print_status():
     [print(item) for item in status]
 
 
+class MyLogger(object):
+    def debug(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        print(msg)
+
+
+def my_hook(d):
+    if d['status'] == 'finished':
+        print('Done downloading, now converting ...')
+
+ydl_opts = {
+    'format': 'bestaudio/best',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '320',
+    }],
+    'logger': MyLogger(),
+    'progress_hooks': [my_hook],
+}
+
+
+
 def download(url):
-    with youtube_dl.YoutubeDL(options) as mp3:
+    with youtube_dl.YoutubeDL(ydl_opts) as mp3:
         info = mp3.extract_info(url, download=False)
         title = info.get('title', None)
 
@@ -51,7 +82,8 @@ status = []
 arguments = sys.argv[1:]
 
 try:
-    options, URLS = getopt.getopt(arguments, 'd:', ['dir='])
+    options, filename = getopt.getopt(arguments, 'd:', ['dir='])
+
 except:
     pass
 
@@ -61,22 +93,21 @@ for option, value in options:
         download_path = value
 
 
-options = {
-        # PERMANENT options
-        'quiet': True,
-        'format': 'bestaudio/best',
-        'ffmpeg_location': f'{os.path.abspath(os.getcwd())}/ffmpeg.exe', 
-        'keepvideo': False,
-        'outtmpl': f'{download_path}/%(title)s.bin',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '320'
-        }],
 
-        # OPTIONAL options
-        'noplaylist': True
-    }
+
+filename =filename[0]
+
+with open(filename, "r") as f:
+    lines = f.readlines()
+
+URLS =[]
+
+for l in lines:
+    URLS.append(l.replace('\n',''))
+    
+
+print(URLS)
+
 
 for url in URLS:
     color_string = color.OKCYAN + '[starting]\t' + color.ENDC + url
